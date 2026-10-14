@@ -12,7 +12,6 @@ class Queue {
             delete[] arr_;
             arr_ = nullptr;
         }
-        
         bool dequeue() {
             if (this->is_empty()) {
                 return false;
