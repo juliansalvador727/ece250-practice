@@ -5,23 +5,23 @@ struct Printer {
     template <typename T>
     static void printAll(const T& obj, const char* label = "") {
         std::cout << label << "[";
-        for (int i = 0; i < obj.size(); ++i) {
-            std::cout << (i ? ", " : "") << obj.at(i);
+        for (std::size_t i = 0; i < obj.size(); ++i) {
+            std::cout << (i ? ", " : "") << obj.at(i).value;
         }
         std::cout << "] size=" << obj.size() << "\n";
     }
 
     template <typename T>
     static void printAt(const T& obj, int i) {
-        if (i < 0 || i >= obj.size()) {
+        if (i < 0 || static_cast<std::size_t>(i) >= obj.size()) {
             std::cout << "index: " << i << " out of range\n";
             return;
         }
-        std::cout << "[" << i << "] = " << obj.at(i) << "\n";
+        std::cout << "[" << i << "] = " << obj.at(i).value << "\n";
     }
 };
 
-enum class Status { Ok, Empty, Full };
+enum class Status { Ok, Empty, Full, OutOfRange };
 
 template <typename T>
 struct Result {
@@ -34,11 +34,11 @@ template <typename T>
 class Deque {
     private:
         T* arr_;
-        int cap_;
-        int f_;
-        int count_;
+        std::size_t cap_;
+        std::size_t f_;
+        std::size_t count_;
     public:
-        Deque(int n) : arr_(new T[n]{}), cap_(n), f_(0), count_(0) {};
+        Deque(std::size_t n) : arr_(new T[n]{}), cap_(n), f_(0), count_(0) {}
         ~Deque() {
             delete[] arr_;
             arr_ = nullptr;
@@ -53,7 +53,7 @@ class Deque {
             arr_[(f_ + count_) % cap_] = x;
             count_++;
             return Status::Ok;
-        }   
+        }
 
         Status push_front(const T& x) {
             if (isFull()) {
@@ -98,15 +98,21 @@ class Deque {
             return {Status::Ok, arr_[(f_ + count_ - 1) % cap_]};
         }
 
-        T at(int i) const { return arr_[(f_ + i) % cap_]; }
+        Result<T> at(std::size_t i) const {
+            if (i >= count_) {
+                return {Status::OutOfRange, T{}};
+            }
+            return {Status::Ok, arr_[(f_ + i) % cap_]};
+        }
+
         bool isFull() const { return cap_ == count_; }
         bool isEmpty() const { return count_ == 0; }
-        int size() const { return count_; }
+        std::size_t size() const { return count_; }
 };
 
 // sample code for solving Q1
 
-void handleExit(Deque<std::string>& garage, const std::string& plate, int k) {
+void handleExit(Deque<std::string>& garage, const std::string& plate, std::size_t k) {
     Deque<std::string> temp(k);
     while (!garage.isEmpty() && garage.back().value != plate)
         temp.push_back(garage.pop_back().value);
@@ -116,7 +122,7 @@ void handleExit(Deque<std::string>& garage, const std::string& plate, int k) {
     if (found) {
         if (!temp.isEmpty()) {
             std::cout << "Moved:";
-            for (int i = 0; i < temp.size(); ++i) std::cout << " " << temp.at(i);
+            for (std::size_t i = 0; i < temp.size(); ++i) std::cout << " " << temp.at(i).value;
             std::cout << "\n";
         }
         std::cout << "Exited: " << plate << "\n";
@@ -127,7 +133,7 @@ void handleExit(Deque<std::string>& garage, const std::string& plate, int k) {
 }
 
 int main() {
-    int k;
+    std::size_t k;
     std::cin >> k;
     Deque<std::string> waiting(1000), garage(k);
     std::string cmd, plate;
